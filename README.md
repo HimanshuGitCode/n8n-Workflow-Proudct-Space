@@ -23,7 +23,8 @@ That’s it. Your AI agent workflow will be ready to run inside n8n.
 
 - 🧭 **Free 1:1 guidance on your Advanced AI roadmap**
   
-  **P.S.** I’ve opened **5 slots** this week for anyone who wants to upskill in Advanced AI.  
+  **P.S.** I’ve opened **5 slots** this week for anyone who wants to upskill in Advanced AI.
+  
   Book a structured mentorship call: [Book a 1:1 on Topmate](https://topmate.io/propel/1309845)
 
 ## Disclaimer
