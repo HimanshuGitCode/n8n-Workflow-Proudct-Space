@@ -1,0 +1,261 @@
+{
+  "name": "Telegram AI Agent with Voice Transcription (Optimized)",
+  "active": false,
+  "settings": {},
+  "nodes": [
+    {
+      "id": "1",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1,
+      "position": [
+        260,
+        300
+      ],
+      "parameters": {
+        "updates": [
+          "message"
+        ]
+      }
+    },
+    {
+      "id": "2",
+      "name": "Switch",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 2,
+      "position": [
+        520,
+        320
+      ],
+      "parameters": {
+        "mode": "rules",
+        "value1": "={{ $json[\"message\"][\"voice\"] ? \"voice\" : \"text\" }}",
+        "rules": [
+          {
+            "value": "text"
+          },
+          {
+            "value": "voice"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3",
+      "name": "Edit Fields",
+      "type": "n8n-nodes-base.editFields",
+      "typeVersion": 1,
+      "position": [
+        800,
+        180
+      ],
+      "parameters": {
+        "mode": "manual",
+        "fields": {
+          "addFields": [
+            {
+              "fieldName": "userMessage",
+              "fieldType": "string",
+              "fieldValue": "={{ $json[\"message\"][\"text\"] }}"
+            },
+            {
+              "fieldName": "chatId",
+              "fieldType": "number",
+              "fieldValue": "={{ $json[\"message\"][\"chat\"][\"id\"] }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "4",
+      "name": "Get a file",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        800,
+        420
+      ],
+      "parameters": {
+        "operation": "getFile",
+        "resource": "file",
+        "fileId": "={{ $json[\"message\"][\"voice\"][\"file_id\"] }}"
+      }
+    },
+    {
+      "id": "5",
+      "name": "Transcribe a recording",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 3,
+      "position": [
+        1040,
+        420
+      ],
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "audioBinaryPropertyName": "data"
+      }
+    },
+    {
+      "id": "6",
+      "name": "Edit Fields1",
+      "type": "n8n-nodes-base.editFields",
+      "typeVersion": 1,
+      "position": [
+        1280,
+        420
+      ],
+      "parameters": {
+        "mode": "manual",
+        "fields": {
+          "addFields": [
+            {
+              "fieldName": "userMessage",
+              "fieldType": "string",
+              "fieldValue": "={{ $json[\"text\"] }}"
+            },
+            {
+              "fieldName": "chatId",
+              "fieldType": "number",
+              "fieldValue": "={{ $item(0).$json[\"message\"][\"chat\"][\"id\"] }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "7",
+      "name": "AI Agent",
+      "type": "n8n-nodes-base.aiAgent",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        260
+      ],
+      "parameters": {
+        "input": "={{ $json[\"userMessage\"] }}",
+        "systemMessage": "You are an AI assistant replying to users on Telegram. Be concise and helpful.",
+        "chatModel": {
+          "provider": "openAi",
+          "modelName": "gpt-4o-mini"
+        },
+        "memory": {
+          "type": "simple",
+          "key": "telegram_user_memory",
+          "maxMessages": 10
+        },
+        "tools": [
+          {
+            "name": "get_mary_google_task_tool",
+            "type": "generic",
+            "description": "Access and manage Mary\u2019s Google Tasks.",
+            "properties": {}
+          }
+        ]
+      }
+    },
+    {
+      "id": "8",
+      "name": "Send a text message",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        1840,
+        260
+      ],
+      "parameters": {
+        "operation": "sendMessage",
+        "resource": "message",
+        "chatId": "={{ $json[\"chatId\"] }}",
+        "text": "={{ $json[\"data\"] || $json[\"answer\"] || $json[\"content\"] }}"
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Transcribe a recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe a recording": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
